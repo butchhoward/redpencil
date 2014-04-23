@@ -2,55 +2,59 @@
 import unittest
 from mock import patch, MagicMock, Mock
 
-class Item(object):
-	def __init__(self):
-		self.price = 10.00
-		self.reduced_price = 0.0
-		self.red_pencil = False
-
-	def get_price(self):
-		return self.price
-
-	def reduce_price(self, percent):
-		self.reduced_price = self.price * (1.0 - (percent/100.0))
-		if percent in range(5,31):
-			self.red_pencil = True
-
-	def get_reduced_price(self):
-		return self.reduced_price
-
- 	def get_red_penciled(self):
-		return self.red_pencil
+from datetime import date
 
 
+class SaleItem(object):
+	def __init__(self, price=None):
+		self.Price = price
+		self.RedPencilDiscount = False
 
-class TestPriceChange(unittest.TestCase):
+	def change_price_to(self, price):
+		reduction = 1- (price / self.Price)
+		if reduction >= 0.05 and reduction <= 0.30:
+			self.RedPencilDiscount = True
+		self.Price = price
 
+
+	def is_red_pencil_discount(self):
+		return self.RedPencilDiscount
+		
+
+class TestRedPencil(unittest.TestCase):
 	def setUp(self):
-		self.item = Item()
+		self.item100 = SaleItem(100.00)
 
-	def test_get_price(self):
-		self.assertEqual(self.item.get_price(), 10.00)
+	def test_can_create_saleitem_with_given_price(self):
+		self.assertEqual(self.item100.Price, 100.00)
 
-	def test_price_reduced_5percent(self):
-		self.item.reduce_price(5)
-		self.assertEqual( self.item.get_reduced_price(), 10.00 * 0.95)
+	def test_sale_item_price_defaults_to_none(self):
+		item = SaleItem()
+		self.assertEqual(item.Price, None)
 
-	def test_is_redpencil_when_reduced_price_between_5_and_30_percent(self):
-		self.item.reduce_price(30)
-		self.assertTrue(self.item.get_red_penciled())
+	def test_can_change_price_to_given_value(self):
+		self.item100.change_price_to(75.00)
+		self.assertEqual(self.item100.Price, 75.00)
 
-	def test_is_redpencil_when_price_is_reduced_by_5_percent(self):
-		self.item.reduce_price(5)
-		self.assertTrue(self.item.get_red_penciled())
+	def test_redpencil_discount_is_true_when_price_reduced_5_percent(self):
+		self.item100.change_price_to(95.00)
+		self.assertTrue(self.item100.is_red_pencil_discount())
 
-	def test_is_not_redpencel_when_priced_is_reduced_by_4_percent(self):
-		self.item.reduce_price(4)
-		self.assertFalse(self.item.get_red_penciled())
+	def test_redpencil_discount_is_false_when_price_reduced_4_percent(self):
+		self.item100.change_price_to(96.00)
+		self.assertFalse(self.item100.is_red_pencil_discount())
 
-	def test_is_not_redpencil_when_price_is_reduced_by_35_percent(self):
-		self.item.reduce_price(35)
-		self.assertFalse(self.item.get_red_penciled())
+	def test_redpencil_discount_is_false_when_priced_reduced_31_percent(self):
+		self.item100.change_price_to(69.00)
+		self.assertFalse(self.item100.is_red_pencil_discount())
+
+	#this is failing because the mock is not quite right
+	@patch("datetime.date.today")
+	def test_price_change_date_defaults_at_today(self, mocktoday):
+		currentday = datetime.date(2014,04,22)
+		mocktoday.return_value = currentday
+		self.assertEqual(self.item100.PriceChangeDate, currentday )
+
 
 
 
